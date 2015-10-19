@@ -1,3 +1,3 @@
 # Testing-AngularJS
 
-test, test, test
+test, test
