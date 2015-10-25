@@ -1,25 +1,61 @@
 // Code goes here
 
 (function() {
-  
-  var app = angular.module("githubViewer", []);
-  
-  var MainController = function($scope, $http) {
 
-    var onUserComplete = function(response) {
-      $scope.user = response.data;
+  var app = angular.module("githubViewer", []);
+
+  var MainController = function($scope, github, $interval, $log,
+    $anchorScroll, $location) {
+
+    var onUserComplete = function(data) {
+      $scope.user = data;
+      $scope.error = "";
+      github.getRepos($scope.user).then(onRepos, onReposError);
     };
 
-    var onError = function(reason) {
+    var onRepos = function(data) {
+      $scope.repos = data;
+      $scope.error = "";
+      $location.hash("userDetails");
+      anchorScroll();
+    };
+
+    var onReposError = function(reason) {
+      $scope.error = "Could not fetch the data";
+    };
+
+    var decrementCountdown = function() {
+      $scope.countdown -= 1;
+      if ($scope.countdown < 1) {
+        $scope.search($scope.username);
+      }
+    };
+
+    var onSearchError = function(reason) {
       $scope.error = "Could not fetch the user";
-    }
+    };
 
-    $http.get("https://api.github.com/users/robconery")
-      .then(onUserComplete, onError);
+    $scope.search = function(username) {
+      $log.info("Searching for " + username);
+      github.getUser(username).then(onUserComplete, onSearchError);
+      if (countdownInterval) {
+        $interval.cancel(countdownInterval);
+      }
+      $scope.countdown = null;
+    };
 
-    $scope.message = "Hello, Angular!";
+    var countdownInterval = null;
+    var startCountdown = function() {
+      countdownInterval = $interval(decrementCountdown, 1000, $scope.countdown);
+    };
+
+    $scope.username = "angular";
+    $scope.message = "Github Viewer";
+    $scope.repoSortOrder = "-stargazers_count";
+    $scope.countdown = 2;
+    startCountdown();
   };
-  
-  app.controller("MainController", ["$scope", "$http", MainController]);
-  
+
+  app.controller("MainController", MainController);
+
 }());
